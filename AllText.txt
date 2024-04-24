@@ -1,0 +1,632 @@
+Exp: 01(Socket)
+To implement inter-process communication
+
+MyServer.java
+
+import java.io.*;
+import java.net.*;
+
+public class MyServer {
+    public static void main(String[] args){
+        try {
+            // Create a ServerSocket object on port 6666
+            ServerSocket ss = new ServerSocket(6666);
+            
+            // Wait and accept a connection from a client
+            Socket s = ss.accept(); // establishes connection 
+            
+            // Create a DataInputStream to read data from the client
+            DataInputStream dis = new DataInputStream(s.getInputStream());
+
+            // Read a UTF-8 encoded string from the client
+            String str = (String)dis.readUTF();
+            
+            // Print the received message
+            System.out.println("message= " + str);
+
+            // Close the ServerSocket
+            ss.close();
+
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+    }
+}
+
+
+MyClient.java
+
+import java.io.*;
+import java.net.*;
+
+public class MyClient {
+    public static void main(String[] args) {
+        try {	
+            // Create a socket and connect to the server running on localhost:6666
+            Socket s = new Socket("localhost", 6666);
+            
+            // Create a DataOutputStream to send data to the server
+            DataOutputStream dout = new DataOutputStream(s.getOutputStream());
+
+            // Write a UTF-8 encoded string to the server
+            dout.writeUTF("Welcome to DC Practicals");
+            
+            // Flush the output stream
+            dout.flush();
+
+            // Close the output stream and the socket
+            dout.close();
+            s.close();
+
+        } catch(Exception e) {
+            System.out.println(e);
+        }
+    }
+}
+
+EXP: 02(RMI)
+
+SampleClient.java
+
+import java.rmi.*;
+import java.rmi.server.*;
+public class SampleClient  
+{
+   public static void main(String[]  args)
+   {
+      // set the security manager for the client
+      System.setSecurityManager(new RMISecurityManager());
+      //get the remote object from the registry
+      try
+        {
+          System.out.println("Security Manager loaded");
+          String url = "//localhost/SAMPLE-SERVER";
+          SampleServer remoteObject = (SampleServer)Naming.lookup(url);
+          System.out.println("Got remote object");
+          System.out.println(" 1 + 2 = " + remoteObject.sum(1,2) );
+        }
+        catch (RemoteException exc) {
+          System.out.println("Error in lookup: " + exc.toString()); }
+        catch (java.net.MalformedURLException exc) {
+          System.out.println("Malformed URL: " + exc.toString());   }
+        catch (java.rmi.NotBoundException exc)  {
+          System.out.println("NotBound: " + exc.toString());
+        }
+   }
+}
+
+
+SampleServer.java
+
+import java.rmi.*;
+
+public interface SampleServer extends Remote
+{
+  public int sum(int a,int b) throws RemoteException;
+}
+
+
+SampleServerImpl.java
+
+import java.rmi.*;
+import java.rmi.server.*;
+import java.rmi.registry.*;
+
+public class SampleServerImpl extends UnicastRemoteObject implements SampleServer
+{
+  SampleServerImpl() throws RemoteException
+  {
+     super();
+  }
+
+	public int sum(int a,int b) throws RemoteException
+	{
+		return (a+b);
+	}
+
+
+	/* SampleServerImpl.java */
+  public static void main(String args[])
+  {
+      try
+      {
+        System.setSecurityManager(new RMISecurityManager());
+        //set the security manager
+
+        //create a local instance of the object
+        SampleServerImpl Server = new SampleServerImpl();
+
+        //put the local instance in the registry
+        Naming.rebind("SAMPLE-SERVER" , Server);
+
+        System.out.println("Server waiting.....");
+      }
+      catch (java.net.MalformedURLException me)       {
+        System.out.println("Malformed URL: " + me.toString());   }
+      catch (RemoteException re)  {
+         System.out.println("Remote exception: " + re.toString());  }
+  }
+
+}
+
+policy.all
+
+grant {
+	permission java.security.AllPermission;
+  };
+
+
+SampleServerImpl.java
+//compile SampleClient.java
+
+//start rmi registry
+start rmiregistry
+
+//create stubs and drivers using the following
+rmic SampleServerImpl
+
+//run the server
+java –Djava.security.policy=policy.all SampleServerImpl
+
+//run the client
+java –Djava.security.policy=policy.all SampleClient
+
+//if it gives an error retype"-" for -D
+
+
+
+
+Exp:04( Clock Synchronization )
+
+#include <stdio.h>
+#include <stdlib.h>  
+#include<bits/stdc++.h>
+using namespace std;
+
+int main() {    
+    int i,j,k; int x=0;    
+    char a[10][10];    
+    int n,num[10],b[10][10];      
+    printf("Enter the no. of physical clocks: ");      
+    scanf("%d",&n);    
+    for(i=0;i<n;i++)     {        
+        printf("\nNo. of nodes for physical clock %d: ",i+1);        
+        scanf("%d",&num[i]);        
+        x=0;        
+        for(j=0;j<num[i];j++)         {            
+            printf("\nEnter the name of process: ");            
+            scanf("%s",&a[i][j]);            
+            b[i][j]=x + rand() % 10;            
+            x=b[i][j]+1;        
+           
+        }    
+       
+    }    
+    printf("\n\n");      
+    for(i=0;i<n;i++)     {        
+        printf("Physical Clock %d",i+1);        
+        for(j=0;j<num[i];j++){            
+            printf("\nProcess %c",a[i][j]);              
+            printf(" has P.T. : %d ",b[i][j]);          
+           
+        }        
+        printf("\n\n");    
+       
+    }    
+    x=0;    
+    for(i=0;i<10;i++)        
+        for(j=0;j<n;j++)            
+            for(k=0;k<num[j];k++)                
+                if(b[j][k]==i)  {                    
+                    x = rand() % 10 + x;                    
+                    printf("\nLogical Clock Timestamp for process %c",a[j][k]);
+                    printf(" : %d ",x);                    
+                    printf("\n");
+
+                }    
+    return 0;
+   
+}
+
+Output:
+/tmp/rPxyCEWrnD.o
+Enter the no. of physical clocks: 3
+
+No. of nodes for physical clock 1: 2
+
+Enter the name of process: a
+
+Enter the name of process: b
+
+No. of nodes for physical clock 2: 2
+
+Enter the name of process: c
+
+Enter the name of process: d
+
+No. of nodes for physical clock 3: 3
+
+Enter the name of process: e
+
+Enter the name of process: f
+
+Enter the name of process: 1
+
+
+Physical Clock 1
+Process a has P.T. : 3 
+Process b has P.T. : 10 
+
+Physical Clock 2
+Process c has P.T. : 7 
+Process d has P.T. : 13 
+
+Physical Clock 3
+Process e has P.T. : 3 
+Process f has P.T. : 9 
+Process 1 has P.T. : 16 
+
+
+Logical Clock Timestamp for process a : 2 
+
+Logical Clock Timestamp for process e : 11 
+
+Logical Clock Timestamp for process c : 12 
+
+Logical Clock Timestamp for process f : 14 
+
+
+
+
+Exp 05(Election algo)
+
+LeaderElection.java
+
+import java.util.Scanner;
+
+public class LeaderElection {
+    
+    class Process {
+        int id;
+        boolean isActive;
+
+        Process(int id) {
+            this.id = id;
+            isActive = true;
+        }
+    }
+
+    int totalProcesses;
+    Process[] processes;
+
+    public LeaderElection() { }
+
+    public void initializeSystem() {
+        System.out.println("Enter the number of processes: ");
+        Scanner scanner = new Scanner(System.in);
+        totalProcesses = scanner.nextInt();
+        scanner.close();
+
+        processes = new Process[totalProcesses];
+        int id = 0;
+        while (id < processes.length) {
+            processes[id] = new Process(id);
+            id++;
+        }
+    }
+
+    public void conductElection() {
+        System.out.println("Process " + processes[findMaxId()].id + " fails");
+        processes[findMaxId()].isActive = false;
+
+        System.out.println("Election Initiated by Process 2");
+        int initiator = 2;
+        int current = initiator;
+        int next = current + 1;
+
+        while (true) {
+            if (processes[next].isActive) {
+                System.out.println("Process " + processes[current].id + " passes Election(" + processes[current].id + ") message to Process " + processes[next].id);
+                current = next;
+            }
+            next = (next + 1) % totalProcesses;
+            if (next == initiator) {
+                break;
+            }
+        }
+
+        System.out.println("Process " + processes[findMaxId()].id + " becomes coordinator");
+        int coordinator = processes[findMaxId()].id;
+
+        current = coordinator;
+        next = (current + 1) % totalProcesses;
+
+        while (true) {
+            if (processes[next].isActive) {
+                System.out.println("Process " + processes[current].id + " passes Coordinator(" + coordinator + ") message to Process " + processes[next].id);
+                current = next;
+            }
+            next = (next + 1) % totalProcesses;
+            if (next == coordinator) {
+                System.out.println("End Of Election ");
+                break;
+            }
+        }
+    }
+
+    public int findMaxId() {
+        int maxIndex = 0;
+        int maxId = Integer.MIN_VALUE;
+        int index = 0;
+
+        while (index < processes.length) {
+            if (processes[index].isActive && processes[index].id > maxId) {
+                maxId = processes[index].id;
+                maxIndex = index;
+            }
+            index++;
+        }
+
+        return maxIndex;
+    }
+
+    public static void main(String[] args) {
+        LeaderElection leaderElection = new LeaderElection();
+        leaderElection.initializeSystem();
+        leaderElection.conductElection();
+    }
+}
+
+Output:
+
+Enter the number of processes:
+5
+Process 4 fails
+Election Initiated by Process 2
+Process 2 passes Election(2) message to Process 3
+Process 3 passes Election(3) message to Process 0
+Process 0 passes Election(0) message to Process 1
+Process 3 becomes coordinator
+Process 3 passes Coordinator(3) message to Process 0
+Process 0 passes Coordinator(3) message to Process 1
+Process 1 passes Coordinator(3) message to Process 2
+End Of Election
+
+Experiment No. 6
+Implement Mutual Exclusion Algorithm
+
+#include<bits/stdc++.h>
+using namespace std;
+
+int main()
+{
+    int ns,ncs,timestamp,site;
+    cout<<"Enter number of sites :";
+    cin>>ns;
+    cout<<"Enter number of sites which want to enter critical section:";
+    cin>>ncs;
+    vector<int> ts(ns,0);
+    vector<int> request;
+    map <int,int> mp;
+    for(int i=0;i<ncs;i++)
+    {
+        cout<<"\nEnter timestamp:";
+        cin>>timestamp;
+        cout<<"Enter site number:";
+        cin>>site;
+        ts[site-1]=timestamp;
+        request.push_back(site);
+        mp[timestamp]=site;
+    }
+
+    cout<<"\nSites and Timestamp:\n";
+    for(int i=0;i<ts.size();i++)
+    {
+        cout<<i+1<<" "<<ts[i]<<endl;
+    }
+
+    for(int i=0;i<request.size();i++)
+    {
+        cout<<"\n Request from site:"<<request[i]<<endl;
+        for(int j=0;j<ts.size();j++)
+        {
+            if(request[i]!=(j+1))
+            {
+                if(ts[j]>ts[request[i]-1] || ts[j]==0)
+                    cout<<j+1<<" Replied\n";
+                else
+                    cout<<j+1<<" Deferred\n";
+            }
+        }
+    }
+
+    cout<<endl;
+    map<int,int>:: iterator it;
+    it=mp.begin();
+    int c=0;
+    for(it=mp.begin();it!=mp.end();it++)
+    {
+        cout<<"Site "<<it->second<<" entered Critical Section \n";
+        if(c==0)
+            cout<<"\nSimilarly,\n\n";
+        c++;
+    }
+    return 0;
+}
+
+Output
+
+/tmp/LlHDmw7ysY.o
+Enter number of sites :4
+Enter number of sites which want to enter critical section:2
+
+Enter timestamp:6
+Enter site number:5
+
+Enter timestamp:9
+Enter site number:4
+
+Sites and Timestamp:
+1 0
+2 0
+3 0
+4 9
+
+ Request from site:5
+1 Replied
+2 Replied
+3 Replied
+4 Replied
+
+ Request from site:4
+1 Replied
+2 Replied
+3 Replied
+
+Site 5 entered Critical Section 
+
+Similarly,
+
+Site 4 entered Critical Section 
+
+
+=== Code Execution Successful ===
+
+
+Exp: 08(Task assignment)
+
+Main.java
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+class Server {
+    private final String name;
+    private final Map<String, Integer> executionCosts; // Execution costs for each task
+    private int load;
+
+    public Server(String name) {
+        this.name = name;
+        this.executionCosts = new HashMap<>();
+        this.load = 0;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getLoad() {
+        return load;
+    }
+
+    public void increaseLoad() {
+        load++;
+    }
+
+    public void decreaseLoad() {
+        load--;
+    }
+
+    public void setExecutionCost(String task, int cost) {
+        executionCosts.put(task, cost);
+    }
+
+    public int getExecutionCost(String task) {
+        return executionCosts.getOrDefault(task, 0); // Default to 0 if task not found
+    }
+}
+
+class LoadBalancer {
+    private final List<Server> servers;
+    private int currentIndex;
+
+    public LoadBalancer(List<Server> servers) {
+        this.servers = servers;
+        this.currentIndex = 0;
+    }
+
+    public Server getNextServer() {
+        Server nextServer = servers.get(currentIndex);
+        currentIndex = (currentIndex + 1) % servers.size();
+        return nextServer;
+    }
+}
+
+
+class Main {
+    private static final int COMMUNICATION_COST_PER_REQUEST = 2;
+
+    public static void main(String[] args) {
+        // Create servers
+        List<Server> servers = new ArrayList<>();
+        Server server1 = new Server("Server 1");
+        Server server2 = new Server("Server 2");
+        Server server3 = new Server("Server 3");
+
+        // Define execution costs for tasks on each server
+        server1.setExecutionCost("Task A", 5);
+        server1.setExecutionCost("Task B", 7);
+
+        server2.setExecutionCost("Task A", 6);
+        server2.setExecutionCost("Task B", 8);
+
+        server3.setExecutionCost("Task A", 4);
+        server3.setExecutionCost("Task B", 6);
+
+        servers.add(server1);
+        servers.add(server2);
+        servers.add(server3);
+
+        LoadBalancer loadBalancer = new LoadBalancer(servers);
+
+        int totalExecutionCost = 0;
+        int totalCommunicationCost = 0;
+
+        // Simulate requests
+        String[] tasks = {"Task A", "Task B"};
+        for (int i = 0; i < 10; i++) {
+            String task = tasks[i % tasks.length]; // Rotate through tasks
+            Server server = loadBalancer.getNextServer();
+            server.increaseLoad();
+
+            int executionCost = server.getExecutionCost(task);
+            totalExecutionCost += executionCost;
+
+            totalCommunicationCost += COMMUNICATION_COST_PER_REQUEST;
+            System.out.println("Request " + i + " (Task: " + task + ") handled by " + server.getName() +
+                    " (Execution Cost: $" + executionCost + ")");
+        }
+
+        // Print server loads
+        for (Server server : servers) {
+            System.out.println(server.getName() + " load: " + server.getLoad());
+        }
+
+        // Calculate total cost
+        int totalCost = totalExecutionCost + totalCommunicationCost;
+        System.out.println("Total Execution Cost: $" + totalExecutionCost);
+        System.out.println("Total Communication Cost: $" + totalCommunicationCost);
+        System.out.println("Total Cost: $" + totalCost);
+    }
+}
+
+Output:
+
+Request 0 (Task: Task A) handled by Server 1 (Execution Cost: $5)
+Request 1 (Task: Task B) handled by Server 2 (Execution Cost: $8)
+Request 2 (Task: Task A) handled by Server 3 (Execution Cost: $4)
+Request 3 (Task: Task B) handled by Server 1 (Execution Cost: $7)
+Request 4 (Task: Task A) handled by Server 2 (Execution Cost: $6)
+Request 5 (Task: Task B) handled by Server 3 (Execution Cost: $6)
+Request 6 (Task: Task A) handled by Server 1 (Execution Cost: $5)
+Request 7 (Task: Task B) handled by Server 2 (Execution Cost: $8)
+Request 8 (Task: Task A) handled by Server 3 (Execution Cost: $4)
+Request 9 (Task: Task B) handled by Server 1 (Execution Cost: $7)
+Server 1 load: 4
+Server 2 load: 3
+Server 3 load: 3
+Total Execution Cost: $60
+Total Communication Cost: $20
+Total Cost: $80
